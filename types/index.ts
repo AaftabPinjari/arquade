@@ -10,6 +10,7 @@ export interface Page {
   is_archived: boolean;
   is_favorite: boolean;
   is_published: boolean;
+  full_width: boolean;
   created_at: string;
   updated_at: string;
 }

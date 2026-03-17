@@ -1,13 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useMemo } from "react";
-import { useCreateBlockNote } from "@blocknote/react";
+import { 
+  useCreateBlockNote, 
+  SuggestionMenuController, 
+  getDefaultReactSlashMenuItems 
+} from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
 import { usePageStore } from "@/stores/page-store";
 import { createClient } from "@/lib/supabase/client";
 import type { Page } from "@/types";
 import { useTheme } from "next-themes";
+import { schema, getCustomSlashMenuItems } from "./schema";
 
 interface PageEditorProps {
     page: Page;
@@ -67,6 +72,7 @@ export function PageEditor({ page }: PageEditorProps) {
     const editor = useCreateBlockNote({
         initialContent,
         uploadFile,
+        schema,
     });
 
     // Save function
@@ -124,6 +130,22 @@ export function PageEditor({ page }: PageEditorProps) {
             onChange={handleChange}
             theme={resolvedTheme === "dark" ? "dark" : "light"}
             className="min-h-[50vh]"
-        />
+            slashMenu={false}
+        >
+            <SuggestionMenuController
+                triggerCharacter={"/"}
+                getItems={async (query) =>
+                    [
+                        ...getDefaultReactSlashMenuItems(editor),
+                        ...getCustomSlashMenuItems(editor),
+                    ].filter((item) =>
+                        item.title.toLowerCase().includes(query.toLowerCase()) ||
+                        (item as any).aliases?.some((alias: string) =>
+                            alias.toLowerCase().includes(query.toLowerCase())
+                        )
+                    )
+                }
+            />
+        </BlockNoteView>
     );
 }

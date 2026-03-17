@@ -58,6 +58,7 @@ export const usePageStore = create<PageStore>((set, get) => ({
             is_archived: false,
             is_favorite: false,
             is_published: false,
+            full_width: false,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
         };

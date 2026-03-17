@@ -36,10 +36,12 @@ export default function PageView() {
         );
     }
 
+    const containerWidth = page.full_width ? "max-w-full px-12" : "max-w-4xl mx-auto px-12";
+
     return (
-        <div className="min-h-full">
+        <div className="min-h-full transition-all duration-300">
             <PageHeader page={page} />
-            <div className="max-w-4xl mx-auto px-12 py-4 pb-32">
+            <div className={`${containerWidth} py-4 pb-32`}>
                 <PageEditor key={page.id} page={page} />
             </div>
         </div>

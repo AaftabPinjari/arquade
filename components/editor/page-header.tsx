@@ -9,9 +9,15 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { ImagePlus, Smile, X } from "lucide-react";
+import { ImagePlus, Maximize2, Minimize2, Smile, X } from "lucide-react";
 import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
 import type { Page } from "@/types";
+import { 
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface PageHeaderProps {
     page: Page;
@@ -38,6 +44,10 @@ export function PageHeader({ page }: PageHeaderProps) {
     const handleEmojiSelect = (emojiData: EmojiClickData) => {
         updatePage(page.id, { icon: emojiData.emoji });
         setEmojiOpen(false);
+    };
+
+    const toggleFullWidth = () => {
+        updatePage(page.id, { full_width: !page.full_width });
     };
 
     const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,8 +79,10 @@ export function PageHeader({ page }: PageHeaderProps) {
         updatePage(page.id, { cover_url: null });
     };
 
+    const containerWidth = page.full_width ? "max-w-full px-12" : "max-w-4xl mx-auto px-12";
+
     return (
-        <div>
+        <div className="relative">
             {/* Cover Image */}
             {page.cover_url && (
                 <div className="relative h-[30vh] w-full group">
@@ -103,15 +115,37 @@ export function PageHeader({ page }: PageHeaderProps) {
             )}
 
             {/* Page header area */}
-            <div className="max-w-4xl mx-auto px-12 pt-12 pb-2">
+            <div className={`${containerWidth} pt-12 pb-2 relative group/header`}>
                 {/* Hover actions for icon and cover when no cover exists */}
-                <div className="flex items-center gap-2 -ml-1 mb-2 opacity-0 hover:opacity-100 transition-opacity">
+                <div className="absolute top-4 right-12 flex items-center gap-1 opacity-0 group-hover/header:opacity-100 transition-opacity z-10">
+                    <TooltipProvider delayDuration={0}>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:bg-muted"
+                                    onClick={toggleFullWidth}
+                                >
+                                    {page.full_width ? (
+                                        <Minimize2 className="h-4 w-4" />
+                                    ) : (
+                                        <Maximize2 className="h-4 w-4" />
+                                    )}
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom" className="text-[10px]">
+                                {page.full_width ? "Standard width" : "Full width"}
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+
                     {!page.cover_url && (
                         <label>
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-muted-foreground text-xs cursor-pointer"
+                                className="h-8 text-muted-foreground text-xs cursor-pointer"
                                 asChild
                             >
                                 <span>
