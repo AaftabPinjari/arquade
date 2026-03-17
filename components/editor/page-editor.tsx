@@ -22,12 +22,6 @@ export function PageEditor({ page }: PageEditorProps) {
     const { resolvedTheme } = useTheme();
     const { updatePage } = usePageStore();
     
-    // Don't render editor if content hasn't been fetched yet
-    // (Content is an array, so if it's undefined or null, we're waiting)
-    if (!page.content) {
-        return null;
-    }
-
     const pendingSaveRef = useRef(false);
     const latestContentRef = useRef<unknown>(null);
     const pageIdRef = useRef(page.id);
