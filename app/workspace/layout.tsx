@@ -5,13 +5,19 @@ import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { usePageStore } from "@/stores/page-store";
 import { useUIStore } from "@/stores/ui-store";
-import { Sidebar } from "@/components/sidebar/sidebar";
 import { cn } from "@/lib/utils";
 import { PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "sonner";
 import type { Page } from "@/types";
 import { useUserStore } from "@/stores/user-store";
+import dynamic from "next/dynamic";
+
+// Lazy load the sidebar to improve initial load
+const DynamicSidebar = dynamic(() => import("@/components/sidebar/sidebar").then(mod => mod.Sidebar), {
+    ssr: false,
+    loading: () => <div className="w-60 h-full bg-sidebar border-r animate-pulse" />
+});
 
 export default function WorkspaceLayout({
     children,
@@ -100,7 +106,7 @@ export default function WorkspaceLayout({
                     sidebarOpen ? "w-60" : "w-0"
                 )}
             >
-                <Sidebar />
+                <DynamicSidebar />
             </aside>
             {/* Main content */}
             <main className="flex-1 flex flex-col min-w-0 overflow-hidden">

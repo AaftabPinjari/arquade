@@ -1,29 +1,24 @@
 "use client";
 
 import { createReactBlockSpec } from "@blocknote/react";
-import { 
-  SandpackProvider, 
-  SandpackLayout, 
-  SandpackCodeEditor, 
-  SandpackPreview,
-  useSandpack
-} from "@codesandbox/sandpack-react";
 import { useState, useEffect, useRef } from "react";
 import { Code2, Eye } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
+import dynamic from "next/dynamic";
 
-// A small helper to sync the code from Sandpack back to BlockNote
-const CodeSync = ({ onCodeChange }: { onCodeChange: (code: string) => void }) => {
-  const { sandpack } = useSandpack();
-  
-  useEffect(() => {
-    const code = sandpack.files["/App.js"].code;
-    onCodeChange(code);
-  }, [sandpack.files, onCodeChange]);
-
-  return null;
-};
+// Dynamically import SandpackContent to keep the initial bundle light
+const SandpackContent = dynamic(() => import("./sandpack-content"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full flex items-center justify-center bg-muted/10 animate-pulse" style={{ height: "400px" }}>
+      <div className="flex flex-col items-center gap-2">
+        <Code2 className="h-8 w-8 text-muted-foreground/40" />
+        <span className="text-xs text-muted-foreground/40 font-medium">Loading sandbox...</span>
+      </div>
+    </div>
+  )
+});
 
 const ReactSandboxBlockSpec = createReactBlockSpec(
   {
@@ -87,7 +82,7 @@ const ReactSandboxBlockSpec = createReactBlockSpec(
         document.addEventListener("mouseup", onMouseUp);
       };
 
-      if (!mounted) return <div className="h-64 rounded-xl bg-muted animate-pulse" />;
+      if (!mounted) return <div className="h-64 rounded-xl bg-muted animate-pulse border" />;
 
       return (
         <div 
@@ -132,55 +127,20 @@ const ReactSandboxBlockSpec = createReactBlockSpec(
             </div>
           </div>
 
-          {/* Sandpack */}
-          <div style={{ height: props.block.props.height }}>
-            <SandpackProvider
-              template="react"
-              theme={resolvedTheme === "dark" ? "dark" : "light"}
-              files={{
-                "/App.js": props.block.props.code,
-              }}
-              customSetup={{
-                dependencies: {
-                  "lucide-react": "latest",
-                  "framer-motion": "latest",
-                  "clsx": "latest",
-                  "tailwind-merge": "latest"
-                }
-              }}
-              options={{
-                recompileDelay: 500,
-                externalResources: ["https://cdn.tailwindcss.com"]
-              }}
-            >
-              <SandpackLayout className="!rounded-none !border-none">
-                {!showPreview ? (
-                  <SandpackCodeEditor 
-                    showLineNumbers 
-                    showTabs={false}
-                    className="w-full flex-1"
-                    style={{ height: props.block.props.height }}
-                  />
-                ) : (
-                  <SandpackPreview 
-                    showOpenInCodeSandbox={false}
-                    className="!bg-background w-full flex-1"
-                    style={{ height: props.block.props.height }}
-                  />
-                )}
-              </SandpackLayout>
-              
-              <CodeSync 
-                onCodeChange={(newCode) => {
-                  if (newCode !== props.block.props.code) {
-                    props.editor.updateBlock(props.block, {
-                      props: { ...props.block.props, code: newCode },
-                    });
-                  }
-                }} 
-              />
-            </SandpackProvider>
-          </div>
+          {/* Dynamic Sandpack Content */}
+          <SandpackContent 
+            code={props.block.props.code}
+            theme={resolvedTheme === "dark" ? "dark" : "light"}
+            height={props.block.props.height}
+            showPreview={showPreview}
+            onCodeChange={(newCode) => {
+              if (newCode !== props.block.props.code) {
+                props.editor.updateBlock(props.block, {
+                  props: { ...props.block.props, code: newCode },
+                });
+              }
+            }}
+          />
 
           {/* Resize: Vertical Handle */}
           <div 

@@ -10,14 +10,25 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { ImagePlus, Maximize2, Minimize2, Smile, X } from "lucide-react";
-import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
+import type { EmojiClickData } from "emoji-picker-react";
 import type { Page } from "@/types";
+import dynamic from "next/dynamic";
 import { 
     Tooltip,
     TooltipContent,
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
+
+// Lazy load the heavy emoji picker
+const EmojiPicker = dynamic(() => import("emoji-picker-react"), {
+    ssr: false,
+    loading: () => (
+        <div className="w-[350px] h-[450px] bg-popover flex items-center justify-center border rounded-lg animate-pulse">
+            <Smile className="h-8 w-8 text-muted-foreground/20" />
+        </div>
+    )
+});
 
 interface PageHeaderProps {
     page: Page;
