@@ -41,7 +41,18 @@ const ReactSandboxBlockSpec = createReactBlockSpec(
       const { resolvedTheme } = useTheme();
       const [showPreview, setShowPreview] = useState(true);
       const [mounted, setMounted] = useState(false);
+      const [isResizing, setIsResizing] = useState(false);
+      const [localHeight, setLocalHeight] = useState(props.block.props.height);
+      const [localWidth, setLocalWidth] = useState(props.block.props.width);
       const containerRef = useRef<HTMLDivElement>(null);
+
+      // Sync local state with props when props update externally (e.g. initial load or collab)
+      useEffect(() => {
+        if (!isResizing) {
+          setLocalHeight(props.block.props.height);
+          setLocalWidth(props.block.props.width);
+        }
+      }, [props.block.props.height, props.block.props.width, isResizing]);
 
       useEffect(() => {
         setMounted(true);
@@ -49,31 +60,46 @@ const ReactSandboxBlockSpec = createReactBlockSpec(
 
       const onMouseDown = (e: React.MouseEvent, type: "height" | "width" | "diagonal") => {
         e.preventDefault();
+        setIsResizing(true);
+        
         const startX = e.clientX;
         const startY = e.clientY;
         const startHeight = props.block.props.height;
-        const startWidth = containerRef.current?.offsetWidth || 800;
+        const currentRect = containerRef.current?.getBoundingClientRect();
+        const startWidth = currentRect?.width || 800;
+        
+        // Use let variables to track the latest values for the onMouseUp callback
+        let latestHeight = startHeight;
+        let latestWidth = props.block.props.width;
 
         const onMouseMove = (moveEvent: MouseEvent) => {
           const deltaX = moveEvent.clientX - startX;
           const deltaY = moveEvent.clientY - startY;
 
           if (type === "height" || type === "diagonal") {
-            const newHeight = Math.max(250, Math.min(1200, startHeight + deltaY));
-            props.editor.updateBlock(props.block, {
-              props: { ...props.block.props, height: newHeight },
-            });
+            latestHeight = Math.max(250, Math.min(1200, startHeight + deltaY));
+            setLocalHeight(latestHeight);
           }
 
           if (type === "width" || type === "diagonal") {
-            const newWidth = Math.max(300, startWidth + deltaX);
-            props.editor.updateBlock(props.block, {
-              props: { ...props.block.props, width: `${newWidth}px` },
-            });
+            const newWidthPx = Math.max(300, startWidth + deltaX);
+            latestWidth = `${newWidthPx}px`;
+            setLocalWidth(latestWidth);
           }
         };
 
         const onMouseUp = () => {
+          setIsResizing(false);
+          
+          // Only update BlockNote state once at the end for performance
+          props.editor.updateBlock(props.block, {
+            props: { 
+              ...props.block.props, 
+              height: latestHeight, 
+              width: latestWidth 
+            },
+          });
+          
           document.removeEventListener("mousemove", onMouseMove);
           document.removeEventListener("mouseup", onMouseUp);
         };
@@ -88,12 +114,19 @@ const ReactSandboxBlockSpec = createReactBlockSpec(
         <div 
           ref={containerRef}
           style={{ 
-            width: props.block.props.width,
-            margin: props.block.props.width === "100%" ? "1rem 0" : "1rem auto"
+            width: localWidth,
+            margin: localWidth === "100%" ? "1rem 0" : "1rem auto",
+            willChange: isResizing ? "width, height" : "auto",
+            touchAction: "none"
           }}
-          className="group relative rounded-2xl border bg-card shadow-sm transition-all hover:shadow-md overflow-hidden mx-auto" 
+          className={`group relative rounded-2xl border bg-card shadow-sm transition-shadow hover:shadow-md overflow-hidden mx-auto ${isResizing ? 'ring-1 ring-blue-500/30' : ''}`} 
           contentEditable={false}
         >
+          {/* Resize Overlay: Prevents iframe from stealing pointer events during resize */}
+          {isResizing && (
+            <div className="absolute inset-0 z-[100] cursor-inherit" />
+          )}
+
           {/* Header */}
           <div className="flex items-center justify-between border-b bg-muted/20 px-4 py-2">
             <div className="flex items-center gap-2">
@@ -131,7 +164,7 @@ const ReactSandboxBlockSpec = createReactBlockSpec(
           <SandpackContent 
             code={props.block.props.code}
             theme={resolvedTheme === "dark" ? "dark" : "light"}
-            height={props.block.props.height}
+            height={localHeight}
             showPreview={showPreview}
             onCodeChange={(newCode) => {
               if (newCode !== props.block.props.code) {
@@ -145,21 +178,29 @@ const ReactSandboxBlockSpec = createReactBlockSpec(
           {/* Resize: Vertical Handle */}
           <div 
             onMouseDown={(e) => onMouseDown(e, "height")}
-            className="absolute bottom-0 left-0 right-4 h-1.5 cursor-ns-resize bg-transparent hover:bg-blue-500/40 transition-colors z-10"
-          />
+            className="absolute bottom-0 left-0 right-6 h-2.5 cursor-ns-resize bg-transparent hover:bg-blue-500/10 transition-colors z-[60] group/h-handle"
+          >
+            <div className="absolute inset-x-0 bottom-1 flex justify-center opacity-0 group-hover/h-handle:opacity-100 transition-opacity">
+              <div className="h-1 w-12 rounded-full bg-blue-500/20" />
+            </div>
+          </div>
 
           {/* Resize: Horizontal Handle */}
           <div 
             onMouseDown={(e) => onMouseDown(e, "width")}
-            className="absolute top-0 right-0 bottom-4 w-1.5 cursor-ew-resize bg-transparent hover:bg-blue-500/40 transition-colors z-10"
-          />
+            className="absolute top-0 right-0 bottom-6 w-2.5 cursor-ew-resize bg-transparent hover:bg-blue-500/10 transition-colors z-[60] group/w-handle"
+          >
+            <div className="absolute inset-y-0 right-1 flex flex-col justify-center opacity-0 group-hover/w-handle:opacity-100 transition-opacity">
+              <div className="w-1 h-12 rounded-full bg-blue-500/20" />
+            </div>
+          </div>
 
           {/* Resize: Diagonal Handle */}
           <div 
             onMouseDown={(e) => onMouseDown(e, "diagonal")}
-            className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize z-20 flex items-center justify-center group/diag"
+            className="absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize z-[70] flex items-end justify-end p-1 group/d-handle"
           >
-            <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30 group-hover/diag:bg-blue-500 transition-colors" />
+            <div className="w-2.5 h-2.5 rounded-br-lg border-r-2 border-b-2 border-muted-foreground/20 group-hover/d-handle:border-blue-500 transition-colors" />
           </div>
         </div>
       );

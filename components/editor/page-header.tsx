@@ -39,15 +39,10 @@ export function PageHeader({ page }: PageHeaderProps) {
     const [title, setTitle] = useState(page.title);
     const [emojiOpen, setEmojiOpen] = useState(false);
     const titleRef = useRef<HTMLTextAreaElement>(null);
-    const debounceRef = useRef<NodeJS.Timeout | null>(null);
-
     const handleTitleChange = useCallback(
         (value: string) => {
             setTitle(value);
-            if (debounceRef.current) clearTimeout(debounceRef.current);
-            debounceRef.current = setTimeout(() => {
-                updatePage(page.id, { title: value || "Untitled" });
-            }, 500);
+            updatePage(page.id, { title: value || "Untitled" });
         },
         [page.id, updatePage]
     );

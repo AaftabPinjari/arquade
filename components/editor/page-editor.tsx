@@ -21,11 +21,9 @@ interface PageEditorProps {
 export function PageEditor({ page }: PageEditorProps) {
     const { resolvedTheme } = useTheme();
     const { updatePage } = usePageStore();
-    const debounceRef = useRef<NodeJS.Timeout | null>(null);
     const pendingSaveRef = useRef(false);
     const latestContentRef = useRef<unknown>(null);
     const pageIdRef = useRef(page.id);
-
     // Track page ID changes for beforeunload
     useEffect(() => {
         pageIdRef.current = page.id;
@@ -84,16 +82,12 @@ export function PageEditor({ page }: PageEditorProps) {
         [page.id, updatePage]
     );
 
-    // Debounced onChange
+    // onChange handler (now leverages global store debounce)
     const handleChange = useCallback(() => {
         const content = editor.document;
         latestContentRef.current = content;
         pendingSaveRef.current = true;
-
-        if (debounceRef.current) clearTimeout(debounceRef.current);
-        debounceRef.current = setTimeout(() => {
-            saveContent(content);
-        }, 1500);
+        saveContent(content);
     }, [editor, saveContent]);
 
     // Save on beforeunload
@@ -112,12 +106,9 @@ export function PageEditor({ page }: PageEditorProps) {
         return () => window.removeEventListener("beforeunload", handleBeforeUnload);
     }, []);
 
-    // Cleanup debounce on unmount — flush pending save
+    // Cleanup on unmount — flush pending save to store
     useEffect(() => {
         return () => {
-            if (debounceRef.current) {
-                clearTimeout(debounceRef.current);
-            }
             if (pendingSaveRef.current && latestContentRef.current) {
                 saveContent(latestContentRef.current);
             }

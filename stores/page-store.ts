@@ -23,6 +23,10 @@ interface PageStore {
     toggleFavorite: (id: string) => Promise<void>;
 }
 
+// Debounce tracking for Supabase sync
+const pendingUpdates: Record<string, any> = {};
+const updateTimers: Record<string, NodeJS.Timeout> = {};
+
 export const usePageStore = create<PageStore>((set, get) => ({
     pages: [],
     isLoaded: false,
@@ -90,23 +94,50 @@ export const usePageStore = create<PageStore>((set, get) => ({
         const prev = get().pages.find((p) => p.id === id);
         if (!prev) return;
 
-        // Optimistic update
+        // 1. Immediate optimistic UI update
+        const updated_at = new Date().toISOString();
         set((state) => ({
             pages: state.pages.map((p) =>
-                p.id === id ? { ...p, ...updates, updated_at: new Date().toISOString() } : p
+                p.id === id ? { ...p, ...updates, updated_at } : p
             ),
         }));
 
-        const supabase = createClient();
-        const { error } = await supabase.from("pages").update(updates).eq("id", id);
+        // 2. Accumulate updates for debounced batch save
+        pendingUpdates[id] = { 
+            ...(pendingUpdates[id] || {}), 
+            ...updates,
+            updated_at 
+        };
 
-        if (error) {
-            // Revert
-            set((state) => ({
-                pages: state.pages.map((p) => (p.id === id ? prev : p)),
-            }));
-            toast.error("Failed to update page");
+        // 3. Clear existing timer to reset debounce
+        if (updateTimers[id]) {
+            clearTimeout(updateTimers[id]);
         }
+
+        // 4. Set debounce timer (e.g., 1 second)
+        updateTimers[id] = setTimeout(async () => {
+            // Include user_id from previous state to satisfy RLS/constraints during upsert
+            const dataToSync = { 
+                ...pendingUpdates[id], 
+                id,
+                user_id: prev.user_id 
+            };
+            
+            // Clean up tracking before the async call
+            delete pendingUpdates[id];
+            delete updateTimers[id];
+
+            const supabase = createClient();
+            
+            const { error } = await supabase
+                .from("pages")
+                .upsert(dataToSync);
+
+            if (error) {
+                console.error("Supabase sync error:", error.message, error.details, error.hint);
+                toast.error(`Sync failed: ${error.message}`);
+            }
+        }, 1000);
     },
 
     deletePage: async (id) => {
