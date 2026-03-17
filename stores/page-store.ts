@@ -11,6 +11,7 @@ interface PageStore {
 
     addPage: (parentId: string | null) => Promise<Page | null>;
     updatePage: (id: string, updates: Partial<Page>) => Promise<void>;
+    fetchPageContent: (id: string) => Promise<void>;
     deletePage: (id: string) => Promise<void>;
     archivePage: (id: string) => Promise<void>;
     restorePage: (id: string) => Promise<void>;
@@ -138,6 +139,35 @@ export const usePageStore = create<PageStore>((set, get) => ({
                 toast.error(`Sync failed: ${error.message}`);
             }
         }, 1000);
+    },
+
+    fetchPageContent: async (id) => {
+        const page = get().pages.find((p) => p.id === id);
+        // Don't refetch if we already have content (unless it's an empty array which could be default)
+        // Check for specific marker or just always check updated_at vs local
+        if (page && page.content && Array.isArray(page.content) && page.content.length > 0) {
+            return;
+        }
+
+        const supabase = createClient();
+        const { data, error } = await supabase
+            .from("pages")
+            .select("content")
+            .eq("id", id)
+            .single();
+
+        if (error) {
+            console.error("Fetch content error:", error);
+            return;
+        }
+
+        if (data) {
+            set((state) => ({
+                pages: state.pages.map((p) =>
+                    p.id === id ? { ...p, content: data.content } : p
+                ),
+            }));
+        }
     },
 
     deletePage: async (id) => {

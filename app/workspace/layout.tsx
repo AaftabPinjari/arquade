@@ -42,11 +42,11 @@ export default function WorkspaceLayout({
             return;
         }
 
-        // Fetch pages and profile in parallel
+        // Fetch pages (shallow) and profile in parallel
         const [pagesRes, profileRes] = await Promise.all([
             supabase
                 .from("pages")
-                .select("*")
+                .select("id, user_id, parent_id, title, icon, cover_url, sort_order, is_archived, is_favorite, is_published, full_width, created_at, updated_at")
                 .eq("user_id", user.id)
                 .order("sort_order", { ascending: true }),
             supabase

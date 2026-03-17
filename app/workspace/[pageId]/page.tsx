@@ -24,10 +24,17 @@ export default function PageView() {
     const params = useParams();
     const router = useRouter();
     const pageId = params.pageId as string;
-    const { pages, isLoaded } = usePageStore();
+    const { pages, isLoaded, fetchPageContent } = usePageStore();
     const [page, setPage] = useState(() =>
         pages.find((p) => p.id === pageId) ?? null
     );
+
+    // Fetch content on demand if not already loaded
+    useEffect(() => {
+        if (pageId && isLoaded) {
+            fetchPageContent(pageId);
+        }
+    }, [pageId, isLoaded, fetchPageContent]);
 
     useEffect(() => {
         const found = pages.find((p) => p.id === pageId);
