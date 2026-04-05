@@ -85,7 +85,7 @@ export function PageHeader({ page }: PageHeaderProps) {
         updatePage(page.id, { cover_url: null });
     };
 
-    const containerWidth = page.full_width ? "max-w-full px-12" : "max-w-4xl mx-auto px-12";
+    const containerWidth = page.full_width ? "max-w-full px-6 md:px-12" : "max-w-4xl mx-auto px-6 md:px-12";
 
     return (
         <div className="relative">
@@ -97,7 +97,7 @@ export function PageHeader({ page }: PageHeaderProps) {
                         alt="Page cover"
                         className="h-full w-full object-cover"
                     />
-                    <div className="absolute bottom-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute bottom-3 right-3 flex gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                         <label>
                             <Button variant="secondary" size="sm" className="cursor-pointer" asChild>
                                 <span>
@@ -122,8 +122,8 @@ export function PageHeader({ page }: PageHeaderProps) {
 
             {/* Page header area */}
             <div className={`${containerWidth} pt-12 pb-2 relative group/header`}>
-                {/* Hover actions for icon and cover when no cover exists */}
-                <div className="absolute top-4 right-12 flex items-center gap-1 opacity-0 group-hover/header:opacity-100 transition-opacity z-10">
+                {/* Actions (always visible on touch, hover on desktop) */}
+                <div className="absolute top-4 right-6 md:right-12 flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover/header:opacity-100 transition-opacity z-10">
                     <TooltipProvider delayDuration={0}>
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -187,7 +187,7 @@ export function PageHeader({ page }: PageHeaderProps) {
                     value={title}
                     onChange={(e) => handleTitleChange(e.target.value)}
                     placeholder="Untitled"
-                    className="w-full text-4xl font-bold bg-transparent outline-none resize-none placeholder:text-muted-foreground/50 leading-tight"
+                    className="w-full text-3xl md:text-4xl font-bold bg-transparent outline-none resize-none placeholder:text-muted-foreground/50 leading-tight no-scrollbar"
                     rows={1}
                     onInput={(e) => {
                         const target = e.target as HTMLTextAreaElement;

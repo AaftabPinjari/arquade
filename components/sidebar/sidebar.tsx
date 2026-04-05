@@ -20,10 +20,12 @@ import {
     FileText,
 } from "lucide-react";
 import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover";
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
 
 import { useUserStore } from "@/stores/user-store";
@@ -58,27 +60,27 @@ export function Sidebar() {
     const userName = profile?.display_name || profile?.email?.split("@")[0] || "User";
 
     return (
-        <div className="h-full w-60 flex flex-col bg-sidebar">
+        <div className="h-full w-full flex flex-col bg-sidebar">
             {/* Header / User Menu */}
-            <div className="flex items-center justify-between px-3 h-11 shrink-0 group">
+            <div className="flex items-center justify-between px-2 h-11 shrink-0 group gap-1">
                 <UserSettings>
                     <button className="flex items-center gap-2 hover:bg-accent rounded-md px-2 py-1 transition-colors min-w-0 flex-1">
                         <Avatar className="h-5 w-5 shrink-0">
                             <AvatarImage src={profile?.avatar_url || ""} />
                             <AvatarFallback className="bg-primary text-primary-foreground text-[10px]">
-                                {userName[0].toUpperCase()}
+                                {userName.substring(0, 2).toUpperCase()}
                             </AvatarFallback>
                         </Avatar>
-                        <span className="text-sm font-semibold truncate">
-                            {userName}&apos;s Arquade
+                        <span className="text-sm font-medium truncate text-muted-foreground group-hover:text-foreground">
+                            {userName}
                         </span>
                     </button>
                 </UserSettings>
                 <Button
+                    onClick={toggleSidebar}
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={toggleSidebar}
+                    className="h-7 w-7 text-muted-foreground hover:bg-accent transition-colors"
                 >
                     <ChevronsLeft className="h-4 w-4" />
                 </Button>
@@ -125,7 +127,7 @@ export function Sidebar() {
 
             {/* Page Tree */}
             <div className="flex-1 min-h-0">
-                <div className="flex items-center justify-between px-4 py-1.5">
+                <div className="flex items-center justify-between px-2 py-1.5">
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         Pages
                     </p>
@@ -138,13 +140,13 @@ export function Sidebar() {
                         <Plus className="h-3.5 w-3.5" />
                     </Button>
                 </div>
-                <ScrollArea className="flex-1 px-2" style={{ height: "calc(100% - 28px)" }}>
+                <ScrollArea className="flex-1" style={{ height: "calc(100% - 28px)" }}>
                     <PageTree />
                 </ScrollArea>
             </div>
 
             {/* Bottom actions */}
-            <div className="shrink-0 border-t border-border p-2 space-y-0.5">
+            <div className="shrink-0 border-t border-border px-2 py-1.5 space-y-0.5">
                 <button
                     onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                     className="flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
@@ -158,17 +160,25 @@ export function Sidebar() {
                     )}
                     <span>{!mounted ? "Mode" : theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
                 </button>
-                <Popover open={trashOpen} onOpenChange={setTrashOpen}>
-                    <PopoverTrigger asChild>
+                <Dialog open={trashOpen} onOpenChange={setTrashOpen}>
+                    <DialogTrigger asChild>
                         <button className="flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors">
                             <Trash2 className="h-4 w-4" />
                             <span>Trash</span>
                         </button>
-                    </PopoverTrigger>
-                    <PopoverContent className="p-1 w-72" side="right" align="end">
-                        <TrashBox onClose={() => setTrashOpen(false)} />
-                    </PopoverContent>
-                </Popover>
+                    </DialogTrigger>
+                    <DialogContent className="p-0 sm:max-w-md bg-background overflow-hidden border-none shadow-2xl">
+                        <DialogHeader className="p-4 py-3 border-b space-y-0">
+                           <DialogTitle className="text-sm font-semibold flex items-center gap-2">
+                               <Trash2 className="h-4 w-4" />
+                               Trash
+                           </DialogTitle>
+                        </DialogHeader>
+                        <div className="p-1">
+                            <TrashBox onClose={() => setTrashOpen(false)} />
+                        </div>
+                    </DialogContent>
+                </Dialog>
                 <button
                     onClick={() => signOut()}
                     className="flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"

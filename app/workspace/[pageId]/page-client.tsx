@@ -78,7 +78,7 @@ export default function PageViewClient({ pageId, initialData }: PageViewClientPr
         );
     }
 
-    const containerWidth = page.full_width ? "max-w-full px-12" : "max-w-4xl mx-auto px-12";
+    const containerWidth = page.full_width ? "max-w-full px-6 md:px-12" : "max-w-4xl mx-auto px-6 md:px-12";
 
     return (
         <div className="min-h-full">

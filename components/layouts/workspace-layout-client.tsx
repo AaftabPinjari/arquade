@@ -27,35 +27,73 @@ export function WorkspaceLayoutClient({
         }
     }, [pathname, setActivePageId]);
 
+    // Close sidebar on mobile navigation
+    useEffect(() => {
+        if (sidebarOpen && window.innerWidth < 768) {
+            toggleSidebar();
+        }
+    }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+
     return (
-        <div className="h-screen flex overflow-hidden bg-background">
+        <div className="h-screen flex overflow-hidden bg-background relative">
             <Toaster position="bottom-right" richColors />
-            {/* Sidebar */}
+            
+            {/* Sidebar (Desktop flex / Mobile absolute) */}
             <aside
                 className={cn(
-                    "h-full flex-shrink-0 border-r border-border bg-sidebar transition-all duration-200 ease-in-out overflow-hidden relative",
-                    sidebarOpen ? "w-60" : "w-0"
+                    "fixed md:relative inset-y-0 left-0 h-full flex-shrink-0 border-r border-border bg-sidebar transition-all duration-300 ease-in-out z-50 overflow-hidden",
+                    sidebarOpen ? "w-60 translate-x-0" : "w-0 -translate-x-full md:translate-x-0 overflow-hidden"
                 )}
             >
                 <div className="w-60 h-full">
                     <Sidebar />
                 </div>
             </aside>
+
+            {/* Backdrop for mobile */}
+            {sidebarOpen && (
+                <div 
+                    className="fixed inset-0 bg-background/50 backdrop-blur-sm z-40 md:hidden transition-opacity"
+                    onClick={toggleSidebar}
+                />
+            )}
+
             {/* Main content */}
-            <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+                {/* Mobile/Closed Trigger Top Bar */}
                 {!sidebarOpen && (
-                    <div className="h-11 flex items-center px-3 border-b border-border shrink-0">
+                    <div className="md:hidden h-12 flex items-center px-4 border-b border-border/50 shrink-0 bg-background/80 backdrop-blur-md z-30">
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7"
+                            className="h-8 w-8 hover:bg-accent"
                             onClick={toggleSidebar}
                         >
                             <PanelLeft className="h-4 w-4" />
                         </Button>
                     </div>
                 )}
-                <div className="flex-1 overflow-y-auto w-full">{children}</div>
+
+                {/* Desktop Trigger (only if closed) */}
+                <div className={cn(
+                    "hidden md:block absolute top-4 left-4 z-40 md:z-10 transition-opacity",
+                    sidebarOpen ? "opacity-0 pointer-events-none" : "opacity-100 pointer-events-auto"
+                )}>
+                    {!sidebarOpen && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 hover:bg-accent shadow-sm border border-border bg-sidebar"
+                            onClick={toggleSidebar}
+                        >
+                            <PanelLeft className="h-4 w-4" />
+                        </Button>
+                    )}
+                </div>
+
+                <div className="flex-1 overflow-y-auto w-full no-scrollbar">
+                    {children}
+                </div>
             </main>
         </div>
     );

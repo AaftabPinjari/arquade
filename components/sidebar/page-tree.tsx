@@ -83,7 +83,7 @@ export function PageTree() {
             onActivate={handleActivate}
             selection={activePageId ?? undefined}
             openByDefault={false}
-            width={224}
+            width={240}
             indent={16}
             rowHeight={30}
             overscanCount={10}

@@ -27,6 +27,7 @@ interface PageStore {
         newIndex: number
     ) => Promise<void>;
     toggleFavorite: (id: string) => Promise<void>;
+    clearTrash: () => Promise<void>;
 }
 
 // Debounce tracking for Supabase sync
@@ -401,6 +402,31 @@ export const usePageStore = create<PageStore>()(
                         pages: state.pages.map((p) => (p.id === id ? prev : p)),
                     }));
                     toast.error("Failed to update favorite");
+                }
+            },
+
+            clearTrash: async () => {
+                const { pages } = get();
+                const archivedIds = pages.filter((p) => p.is_archived).map((p) => p.id);
+                
+                if (archivedIds.length === 0) return;
+
+                const prevPages = [...pages];
+                set((state) => ({
+                    pages: state.pages.filter((p) => !p.is_archived),
+                }));
+
+                const supabase = createClient();
+                const { error } = await supabase
+                    .from("pages")
+                    .delete()
+                    .in("id", archivedIds);
+
+                if (error) {
+                    set({ pages: prevPages });
+                    toast.error("Failed to clear trash");
+                } else {
+                    toast.success("Trash cleared");
                 }
             },
         }),
