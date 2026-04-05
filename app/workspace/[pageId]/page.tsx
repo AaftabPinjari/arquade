@@ -3,7 +3,11 @@
 import PageViewClient from "./page-client";
 import { use } from "react";
 
-export default function Page({ params }: any) {
+interface RouteParams {
+    pageId: string;
+}
+
+export default function Page({ params }: { params: Promise<RouteParams> }) {
     const { pageId } = use(params);
     return <PageViewClient pageId={pageId} initialData={null} />;
 }
