@@ -36,7 +36,7 @@ import { Sun, Moon } from "lucide-react";
 
 export function Sidebar() {
     const router = useRouter();
-    const { theme, setTheme } = useTheme();
+    const { resolvedTheme, setTheme } = useTheme();
     const { profile } = useUserStore();
     const { addPage, pages, fetchPageContent } = usePageStore();
     const { toggleSidebar } = useUIStore();
@@ -148,17 +148,17 @@ export function Sidebar() {
             {/* Bottom actions */}
             <div className="shrink-0 border-t border-border px-2 py-1.5 space-y-0.5">
                 <button
-                    onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                    onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
                     className="flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                 >
                     {!mounted ? (
                         <div className="h-4 w-4" /> // Spacing placeholder
-                    ) : theme === "dark" ? (
+                    ) : resolvedTheme === "dark" ? (
                         <Sun className="h-4 w-4" />
                     ) : (
                         <Moon className="h-4 w-4" />
                     )}
-                    <span>{!mounted ? "Mode" : theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+                    <span>{!mounted ? "Mode" : resolvedTheme === "dark" ? "Light Mode" : "Dark Mode"}</span>
                 </button>
                 <Dialog open={trashOpen} onOpenChange={setTrashOpen}>
                     <DialogTrigger asChild>

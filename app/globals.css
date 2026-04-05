@@ -134,3 +134,17 @@
     scrollbar-width: none;
   }
 }
+
+/* Reduce BlockNote editor padding on mobile */
+@media (max-width: 767px) {
+  .bn-editor {
+    padding-inline: 16px !important;
+  }
+}
+
+/* Fix BlockNote drag-and-drop on touch devices */
+.bn-side-menu [draggable="true"],
+.bn-drag-handle,
+.bn-side-menu {
+  touch-action: none;
+}
