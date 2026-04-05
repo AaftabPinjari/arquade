@@ -7,10 +7,11 @@ import { usePageStore } from "@/stores/page-store";
 import { useUIStore } from "@/stores/ui-store";
 import { TreeNode } from "./tree-node";
 import type { TreePage } from "@/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function PageTree() {
     const router = useRouter();
-    const { pages, movePage, addPage } = usePageStore();
+    const { pages, movePage, addPage, isLoaded } = usePageStore();
     const { activePageId } = useUIStore();
     const treeRef = useRef<ReturnType<typeof Tree<TreePage>> | null>(null);
 
@@ -61,6 +62,18 @@ export function PageTree() {
     const handleActivate = (node: { data: TreePage }) => {
         router.push(`/workspace/${node.data.id}`);
     };
+
+    if (!isLoaded) {
+        return (
+            <div className="space-y-2.5 px-2 py-2">
+                <Skeleton className="h-5 w-[80%] rounded-md" />
+                <Skeleton className="h-5 w-[75%] rounded-md" />
+                <Skeleton className="h-5 w-[85%] rounded-md" />
+                <Skeleton className="h-5 w-[70%] rounded-md" />
+                <Skeleton className="h-5 w-[90%] rounded-md" />
+            </div>
+        );
+    }
 
     return (
         <Tree<TreePage>

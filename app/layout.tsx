@@ -13,6 +13,7 @@ export const metadata: Metadata = {
 };
 
 import { ThemeProvider } from "@/components/theme-provider";
+import { ServiceWorkerRegistration } from "@/components/providers/service-worker-registration";
 
 export default function RootLayout({
   children,
@@ -29,6 +30,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
+          <ServiceWorkerRegistration />
         </ThemeProvider>
       </body>
     </html>

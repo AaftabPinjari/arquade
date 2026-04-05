@@ -1,50 +1,72 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { usePageStore } from "@/stores/page-store";
 import { PageHeader } from "@/components/editor/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { Page } from "@/types";
 import dynamic from "next/dynamic";
 
-// Dynamic load the editor to avoid blocking the main thread
-const PageEditor = dynamic(() => import("@/components/editor/page-editor").then(mod => mod.PageEditor), {
-    ssr: false,
-    loading: () => (
-        <div className="space-y-4 py-8">
-            <Skeleton className="h-6 w-1/4" />
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
-            <Skeleton className="h-4 w-5/6" />
-        </div>
-    )
-});
+// Code-split the heavy editor bundle (~300KB+), but preload it eagerly
+// so it's ready by the time the user navigates to any page.
+const PageEditor = dynamic(
+    () => import("@/components/editor/page-editor").then(mod => mod.PageEditor),
+    { ssr: false }
+);
 
-export default function PageViewClient() {
-    const params = useParams();
+// Preload the editor module immediately after this chunk loads.
+// This downloads the editor JS in the background without blocking
+// the current page render. By the time a user clicks a page, it's cached.
+if (typeof window !== "undefined") {
+    import("@/components/editor/page-editor");
+}
+
+interface PageViewClientProps {
+    pageId: string;
+    initialData: Page | null;
+}
+
+export default function PageViewClient({ pageId, initialData }: PageViewClientProps) {
     const router = useRouter();
-    const pageId = params.pageId as string;
-    const { pages, isLoaded, fetchPageContent } = usePageStore();
-    const [page, setPage] = useState(() =>
-        pages.find((p) => p.id === pageId) ?? null
+    const pages = usePageStore((s) => s.pages);
+    const isLoaded = usePageStore((s) => s.isLoaded);
+    const fetchPageContent = usePageStore((s) => s.fetchPageContent);
+    const loadedContentIds = usePageStore((s) => s.loadedContentIds);
+
+    // Derive page from the store — this is instant, no network call
+    const page = useMemo(() => {
+        return pages.find((p) => p.id === pageId) || initialData || null;
+    }, [pages, pageId, initialData]);
+
+    // Content is "loaded" if:
+    // - we've already fetched it (tracked in loadedContentIds), OR
+    // - content is an Array (even empty — valid for a new page)
+    const contentLoaded = page && (
+        loadedContentIds.has(pageId) ||
+        Array.isArray(page.content)
     );
 
-    // Fetch content on demand if not already loaded
+    // Fetch content only when the page exists but content hasn't been fetched yet
     useEffect(() => {
-        if (pageId && isLoaded) {
+        if (pageId && isLoaded && page && !contentLoaded) {
             fetchPageContent(pageId);
         }
-    }, [pageId, isLoaded, fetchPageContent]);
+    }, [pageId, isLoaded, page, contentLoaded, fetchPageContent]);
 
+    // Handle 404 — only redirect if store is loaded and page truly doesn't exist
     useEffect(() => {
-        const found = pages.find((p) => p.id === pageId);
-        if (found) {
-            setPage(found);
-        } else if (isLoaded) {
-            router.push("/workspace");
+        if (isLoaded && !page) {
+            const timer = setTimeout(() => {
+                if (!usePageStore.getState().pages.find(p => p.id === pageId)) {
+                    router.push("/workspace");
+                }
+            }, 500);
+            return () => clearTimeout(timer);
         }
-    }, [pageId, pages, isLoaded, router]);
+    }, [isLoaded, page, pageId, router]);
 
+    // Show skeleton only if the store hasn't loaded yet or page not found
     if (!page) {
         return (
             <div className="max-w-4xl mx-auto py-16 px-8 space-y-6">
@@ -59,10 +81,10 @@ export default function PageViewClient() {
     const containerWidth = page.full_width ? "max-w-full px-12" : "max-w-4xl mx-auto px-12";
 
     return (
-        <div className="min-h-full transition-all duration-300">
+        <div className="min-h-full">
             <PageHeader page={page} />
             <div className={`${containerWidth} py-4 pb-32`}>
-                {page.content ? (
+                {contentLoaded ? (
                     <PageEditor key={page.id} page={page} />
                 ) : (
                     <div className="space-y-4 py-8">

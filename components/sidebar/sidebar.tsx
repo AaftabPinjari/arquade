@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { usePageStore } from "@/stores/page-store";
 import { useUIStore } from "@/stores/ui-store";
 import { signOut } from "@/lib/actions/auth";
@@ -23,7 +24,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { useUserStore } from "@/stores/user-store";
 import { UserSettings } from "./user-settings";
@@ -35,9 +36,15 @@ export function Sidebar() {
     const router = useRouter();
     const { theme, setTheme } = useTheme();
     const { profile } = useUserStore();
-    const { addPage, pages } = usePageStore();
+    const { addPage, pages, fetchPageContent } = usePageStore();
     const { toggleSidebar } = useUIStore();
     const [trashOpen, setTrashOpen] = useState(false);
+    
+    // Avoid hydration mismatch by waiting for mount
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const favorites = pages.filter((p) => p.is_favorite && !p.is_archived);
 
@@ -100,15 +107,16 @@ export function Sidebar() {
                     </p>
                     <div className="space-y-0.5">
                         {favorites.map((page) => (
-                            <button
+                            <Link
                                 key={page.id}
-                                onClick={() => router.push(`/workspace/${page.id}`)}
+                                href={`/workspace/${page.id}`}
+                                onMouseEnter={() => fetchPageContent(page.id)}
                                 className="flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-sm hover:bg-accent transition-colors truncate"
                             >
                                 <span className="shrink-0">{page.icon}</span>
                                 <span className="truncate">{page.title}</span>
                                 <Star className="h-3 w-3 ml-auto shrink-0 text-yellow-500 fill-yellow-500" />
-                            </button>
+                            </Link>
                         ))}
                     </div>
                     <Separator className="mt-1" />
@@ -141,12 +149,14 @@ export function Sidebar() {
                     onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                     className="flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                 >
-                    {theme === "dark" ? (
+                    {!mounted ? (
+                        <div className="h-4 w-4" /> // Spacing placeholder
+                    ) : theme === "dark" ? (
                         <Sun className="h-4 w-4" />
                     ) : (
                         <Moon className="h-4 w-4" />
                     )}
-                    <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+                    <span>{!mounted ? "Mode" : theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
                 </button>
                 <Popover open={trashOpen} onOpenChange={setTrashOpen}>
                     <PopoverTrigger asChild>

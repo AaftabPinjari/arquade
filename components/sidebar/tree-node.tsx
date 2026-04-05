@@ -2,6 +2,7 @@
 
 import type { NodeRendererProps } from "react-arborist";
 import { useRouter } from "next/navigation";
+import { useCallback } from "react";
 import { usePageStore } from "@/stores/page-store";
 import { useUIStore } from "@/stores/ui-store";
 import { cn } from "@/lib/utils";
@@ -13,6 +14,7 @@ import {
     Star,
     Copy,
 } from "lucide-react";
+import Link from "next/link";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -24,7 +26,7 @@ import type { TreePage } from "@/types";
 
 export function TreeNode({ node, style, dragHandle }: NodeRendererProps<TreePage>) {
     const router = useRouter();
-    const { addPage, archivePage, toggleFavorite } = usePageStore();
+    const { addPage, archivePage, toggleFavorite, fetchPageContent } = usePageStore();
     const { activePageId } = useUIStore();
     const isActive = activePageId === node.data.id;
 
@@ -50,6 +52,11 @@ export function TreeNode({ node, style, dragHandle }: NodeRendererProps<TreePage
         await toggleFavorite(node.data.id);
     }
 
+    // Prefetch content on hover — so it's ready by the time user clicks
+    const handleMouseEnter = useCallback(() => {
+        fetchPageContent(node.data.id);
+    }, [node.data.id, fetchPageContent]);
+
     return (
         <div
             ref={dragHandle}
@@ -60,6 +67,7 @@ export function TreeNode({ node, style, dragHandle }: NodeRendererProps<TreePage
                 isActive && "bg-accent"
             )}
             onClick={() => node.activate()}
+            onMouseEnter={handleMouseEnter}
         >
             {/* Expand/collapse chevron */}
             <button
@@ -100,7 +108,13 @@ export function TreeNode({ node, style, dragHandle }: NodeRendererProps<TreePage
                         className="bg-transparent outline-none w-full text-[13px]"
                     />
                 ) : (
-                    node.data.name
+                    <Link
+                        href={`/workspace/${node.data.id}`}
+                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                        className="w-full block"
+                    >
+                        {node.data.name}
+                    </Link>
                 )}
             </span>
 
