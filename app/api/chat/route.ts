@@ -36,7 +36,7 @@ Ground all your answers strictly on this document context. If the user asks you 
 Always output standard Markdown formatting in your answers. Keep your answers clear, concise, and helpful.`;
 
         const model = genAI.getGenerativeModel({
-            model: "gemini-2.5-flash",
+            model: "gemini-3.1-flash-lite",
             systemInstruction,
         });
 
