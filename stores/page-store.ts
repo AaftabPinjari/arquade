@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { useUserStore } from "./user-store";
 import type { Page } from "@/types";
+import { uuidv4 } from "@/lib/utils";
 
 interface PageStore {
     pages: Page[];
@@ -33,6 +34,8 @@ interface PageStore {
 // Debounce tracking for Supabase sync
 const pendingUpdates: Record<string, any> = {};
 const updateTimers: Record<string, NodeJS.Timeout> = {};
+// Initial insert promise tracking to prevent race conditions
+const pendingInserts: Record<string, Promise<any> | undefined> = {};
 
 export const usePageStore = create<PageStore>()(
     persist(
@@ -62,7 +65,7 @@ export const usePageStore = create<PageStore>()(
                 const sortOrder = generateKeyBetween(lastOrder, null);
 
                 const newPage: Page = {
-                    id: crypto.randomUUID(),
+                    id: uuidv4(),
                     user_id: profile.id,
                     parent_id: parentId,
                     title: "Untitled",
@@ -83,15 +86,21 @@ export const usePageStore = create<PageStore>()(
 
                 // 2. Background sync with Supabase
                 const supabase = createClient();
-                const { error } = await supabase.from("pages").insert({
-                    id: newPage.id,
-                    user_id: newPage.user_id,
-                    parent_id: newPage.parent_id,
-                    title: newPage.title,
-                    icon: newPage.icon,
-                    sort_order: newPage.sort_order,
-                    content: newPage.content,
-                });
+                const insertPromise = (async () => {
+                    return await supabase.from("pages").insert({
+                        id: newPage.id,
+                        user_id: newPage.user_id,
+                        parent_id: newPage.parent_id,
+                        title: newPage.title,
+                        icon: newPage.icon,
+                        sort_order: newPage.sort_order,
+                        content: newPage.content,
+                    });
+                })();
+
+                pendingInserts[newPage.id] = insertPromise;
+                const { error } = await insertPromise;
+                delete pendingInserts[newPage.id];
 
                 if (error) {
                     // Revert on error
@@ -129,6 +138,30 @@ export const usePageStore = create<PageStore>()(
 
                 // 4. Set debounce timer (e.g., 1 second)
                 updateTimers[id] = setTimeout(async () => {
+                    // Re-verify that the page still exists in the local store
+                    const currentPage = get().pages.find((p) => p.id === id);
+                    if (!currentPage) {
+                        delete pendingUpdates[id];
+                        delete updateTimers[id];
+                        return;
+                    }
+
+                    // Await pending insert if any
+                    if (pendingInserts[id]) {
+                        try {
+                            await pendingInserts[id];
+                        } catch (e) {
+                            // Ignore insert error here, addPage handles it
+                        }
+                        
+                        // Re-verify again after awaiting in case it failed and was reverted
+                        if (!get().pages.find((p) => p.id === id)) {
+                            delete pendingUpdates[id];
+                            delete updateTimers[id];
+                            return;
+                        }
+                    }
+
                     // Include user_id from previous state to satisfy RLS/constraints during upsert
                     const dataToSync = { 
                         ...pendingUpdates[id], 

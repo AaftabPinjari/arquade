@@ -13,6 +13,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Page } from "@/types";
 import { useTheme } from "next-themes";
 import { schema, getCustomSlashMenuItems } from "./schema";
+import { uuidv4 } from "@/lib/utils";
 
 interface PageEditorProps {
     page: Page;
@@ -40,7 +41,7 @@ export function PageEditor({ page }: PageEditorProps) {
             if (!user) return "";
 
             const ext = file.name.split(".").pop();
-            const path = `${user.id}/${page.id}/${crypto.randomUUID()}.${ext}`;
+            const path = `${user.id}/${page.id}/${uuidv4()}.${ext}`;
 
             const { error } = await supabase.storage
                 .from("page-images")
@@ -73,6 +74,22 @@ export function PageEditor({ page }: PageEditorProps) {
         uploadFile,
         schema,
     });
+
+    // Sync external content changes into the editor
+    useEffect(() => {
+        if (!page.content || !Array.isArray(page.content)) return;
+        
+        // If we are currently typing/saving locally, don't overwrite
+        if (pendingSaveRef.current) return;
+        
+        // If the editor document matches the page content, do nothing
+        const stringifiedLocal = JSON.stringify(editor.document);
+        const stringifiedIncoming = JSON.stringify(page.content);
+        if (stringifiedLocal === stringifiedIncoming) return;
+        
+        // Replace blocks in the editor
+        editor.replaceBlocks(editor.document, page.content as any);
+    }, [page.content, editor]);
 
     // Save function
     const saveContent = useCallback(
