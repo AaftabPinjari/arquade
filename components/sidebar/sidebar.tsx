@@ -7,6 +7,7 @@ import { useUIStore } from "@/stores/ui-store";
 import { signOut } from "@/lib/actions/auth";
 import { PageTree } from "./page-tree";
 import { TrashBox } from "./trash-box";
+import { SearchDialog } from "./search-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -41,11 +42,24 @@ export function Sidebar() {
     const { addPage, pages, fetchPageContent } = usePageStore();
     const { toggleSidebar } = useUIStore();
     const [trashOpen, setTrashOpen] = useState(false);
+    const [searchOpen, setSearchOpen] = useState(false);
     
     // Avoid hydration mismatch by waiting for mount
     const [mounted, setMounted] = useState(false);
     useEffect(() => {
         setMounted(true);
+    }, []);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+                e.preventDefault();
+                setSearchOpen((prev) => !prev);
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
     }, []);
 
     const favorites = pages.filter((p) => p.is_favorite && !p.is_archived);
@@ -91,11 +105,14 @@ export function Sidebar() {
             {/* Quick actions */}
             <div className="px-2 py-1 space-y-0.5">
                 <button
-                    onClick={() => { }}
-                    className="flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                    onClick={() => setSearchOpen(true)}
+                    className="flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors group/search-btn"
                 >
                     <Search className="h-4 w-4" />
                     <span>Search</span>
+                    <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-0.5 rounded border border-border bg-muted/50 px-1.5 font-mono text-[10px] font-medium text-muted-foreground/80 group-hover/search-btn:border-foreground/20">
+                        <span className="text-xs">⌘</span>K
+                    </kbd>
                 </button>
             </div>
 
@@ -187,6 +204,8 @@ export function Sidebar() {
                     <span>Log out</span>
                 </button>
             </div>
+            
+            <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
         </div>
     );
 }

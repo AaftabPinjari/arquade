@@ -24,6 +24,7 @@ export function PageEditor({ page }: PageEditorProps) {
     const { updatePage } = usePageStore();
     
     const pendingSaveRef = useRef(false);
+    const isSyncingRef = useRef(false);
     const latestContentRef = useRef<unknown>(null);
     const pageIdRef = useRef(page.id);
     // Track page ID changes for beforeunload
@@ -88,7 +89,15 @@ export function PageEditor({ page }: PageEditorProps) {
         if (stringifiedLocal === stringifiedIncoming) return;
         
         // Replace blocks in the editor
-        editor.replaceBlocks(editor.document, page.content as any);
+        isSyncingRef.current = true;
+        try {
+            editor.replaceBlocks(editor.document, page.content as any);
+        } finally {
+            // Delay resetting the syncing flag to let synchronous onChange event cycles settle
+            setTimeout(() => {
+                isSyncingRef.current = false;
+            }, 0);
+        }
     }, [page.content, editor]);
 
     // Save function
@@ -102,6 +111,7 @@ export function PageEditor({ page }: PageEditorProps) {
 
     // onChange handler (now leverages global store debounce)
     const handleChange = useCallback(() => {
+        if (isSyncingRef.current) return;
         const content = editor.document;
         latestContentRef.current = content;
         pendingSaveRef.current = true;
