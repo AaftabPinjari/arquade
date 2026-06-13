@@ -19,6 +19,29 @@ interface PageEditorProps {
     page: Page;
 }
 
+function deepEqual(a: any, b: any): boolean {
+    if (a === b) return true;
+    if (typeof a !== typeof b) return false;
+    if (a && b && typeof a === "object") {
+        if (Array.isArray(a)) {
+            if (!Array.isArray(b) || a.length !== b.length) return false;
+            for (let i = 0; i < a.length; i++) {
+                if (!deepEqual(a[i], b[i])) return false;
+            }
+            return true;
+        }
+        const keysA = Object.keys(a);
+        const keysB = Object.keys(b);
+        if (keysA.length !== keysB.length) return false;
+        for (const key of keysA) {
+            if (!Object.prototype.hasOwnProperty.call(b, key)) return false;
+            if (!deepEqual(a[key], b[key])) return false;
+        }
+        return true;
+    }
+    return false;
+}
+
 export function PageEditor({ page }: PageEditorProps) {
     const { resolvedTheme } = useTheme();
     const { updatePage } = usePageStore();
@@ -84,9 +107,7 @@ export function PageEditor({ page }: PageEditorProps) {
         if (pendingSaveRef.current) return;
         
         // If the editor document matches the page content, do nothing
-        const stringifiedLocal = JSON.stringify(editor.document);
-        const stringifiedIncoming = JSON.stringify(page.content);
-        if (stringifiedLocal === stringifiedIncoming) return;
+        if (deepEqual(editor.document, page.content)) return;
         
         // Replace blocks in the editor
         isSyncingRef.current = true;

@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { WorkspaceLayoutClient } from "@/components/layouts/workspace-layout-client";
 import { StoreInitializer } from "@/components/providers/store-initializer";
 import { BackgroundContentSync } from "@/components/providers/background-content-sync";
-import { RealtimeSync } from "@/components/providers/realtime-sync";
 import type { Page } from "@/types";
 
 export default async function WorkspaceLayout({
@@ -43,9 +42,6 @@ export default async function WorkspaceLayout({
         <>
             {/* Initialize Zustand store with server data (merged with cached content) */}
             <StoreInitializer pages={pages} profile={profile} />
-            
-            {/* Realtime listener for cross-device updates */}
-            <RealtimeSync />
             
             {/* Silently fetch ALL page content in background after 2s */}
             <BackgroundContentSync />
