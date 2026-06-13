@@ -19,18 +19,22 @@ export function StoreInitializer({ pages: serverPages, profile }: Props) {
         // but DON'T have content (layout.tsx only fetches metadata columns).
         // Locally cached pages (from persist) may have content from previous sessions.
         const cachedPages = usePageStore.getState().pages;
-        const cachedContentMap = new Map<string, unknown>();
+        const cachedPagesMap = new Map<string, Page>();
         cachedPages.forEach((p) => {
-            if (p.content && Array.isArray(p.content) && p.content.length > 0) {
-                cachedContentMap.set(p.id, p.content);
-            }
+            cachedPagesMap.set(p.id, p);
         });
 
-        // Merge: use server metadata + preserve cached content
+        // Merge: use server metadata + preserve cached content only if it is up-to-date
         const mergedPages = serverPages.map((serverPage) => {
-            const cachedContent = cachedContentMap.get(serverPage.id);
-            if (cachedContent && (!serverPage.content || (Array.isArray(serverPage.content) && serverPage.content.length === 0))) {
-                return { ...serverPage, content: cachedContent };
+            const cachedPage = cachedPagesMap.get(serverPage.id);
+            if (cachedPage && cachedPage.content && Array.isArray(cachedPage.content) && cachedPage.content.length > 0) {
+                const serverTime = new Date(serverPage.updated_at).getTime();
+                const cachedTime = new Date(cachedPage.updated_at).getTime();
+                
+                // Only reuse cached content if the local copy is at least as new as the server's copy
+                if (serverTime <= cachedTime) {
+                    return { ...serverPage, content: cachedPage.content };
+                }
             }
             return serverPage;
         });
