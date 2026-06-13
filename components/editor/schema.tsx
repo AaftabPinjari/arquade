@@ -1,15 +1,25 @@
 "use client";
 
-import { BlockNoteSchema, defaultBlockSpecs } from "@blocknote/core";
+import { BlockNoteSchema, defaultBlockSpecs, createCodeBlockSpec } from "@blocknote/core";
+import { codeBlockOptions } from "@blocknote/code-block";
 import { ReactSandboxBlock } from "./blocks/react-sandbox-block";
 import { WebSandboxBlock } from "./blocks/web-sandbox-block";
+import { createHighlighter } from "./blocks/shiki.bundle";
 import { Code2, Globe } from "lucide-react";
 import { DefaultReactSuggestionItem } from "@blocknote/react";
+
+// Build the enhanced code block with Shiki syntax highlighting + language selector
+const codeBlock = createCodeBlockSpec({
+  ...codeBlockOptions,
+  defaultLanguage: "typescript",
+  createHighlighter,
+});
 
 // Define the custom schema
 export const schema = BlockNoteSchema.create({
   blockSpecs: {
     ...defaultBlockSpecs,
+    codeBlock,
     "react-sandbox": ReactSandboxBlock,
     "web-sandbox": WebSandboxBlock,
   },
@@ -52,3 +62,4 @@ export const getCustomSlashMenuItems = (editor: any): DefaultReactSuggestionItem
     icon: <Globe size={18} />,
   },
 ];
+
