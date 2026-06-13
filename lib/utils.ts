@@ -12,3 +12,26 @@ export function uuidv4(): string {
     return v.toString(16);
   });
 }
+
+// Extract readable text from block note content structure recursively
+export function extractTextFromBlocks(blocks: any): string {
+  if (!blocks) return "";
+  if (typeof blocks === "string") return blocks;
+  if (Array.isArray(blocks)) {
+    return blocks.map(extractTextFromBlocks).join(" ");
+  }
+  if (typeof blocks === "object") {
+    let text = "";
+    if (blocks.text && typeof blocks.text === "string") {
+      text += blocks.text + " ";
+    }
+    if (blocks.content) {
+      text += extractTextFromBlocks(blocks.content) + " ";
+    }
+    if (blocks.children) {
+      text += extractTextFromBlocks(blocks.children) + " ";
+    }
+    return text.trim();
+  }
+  return "";
+}
