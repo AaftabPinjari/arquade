@@ -11,7 +11,9 @@ import {
     FileText,
     Bot,
     User,
-    KeyRound
+    KeyRound,
+    Copy,
+    Check
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -88,7 +90,15 @@ export function AIChatPanel({ page, pageContent, onClose }: AIChatPanelProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [apiKey, setApiKey] = useState("");
     const [showKeyConfig, setShowKeyConfig] = useState(false);
+    const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
+
+    const handleCopy = (content: string, index: number) => {
+        if (!content) return;
+        navigator.clipboard.writeText(content);
+        setCopiedIndex(index);
+        setTimeout(() => setCopiedIndex(null), 2000);
+    };
 
     // Load API Key from localStorage on mount
     useEffect(() => {
@@ -228,54 +238,61 @@ export function AIChatPanel({ page, pageContent, onClose }: AIChatPanelProps) {
             </div>
 
             {/* API Key Configuration Banner */}
-            {showKeyConfig && (
-                <div className="p-3.5 border-b border-border bg-violet-500/5 text-xs space-y-2.5 animate-in slide-in-from-top duration-200">
-                    <div className="flex items-center justify-between font-semibold text-foreground">
-                        <span className="flex items-center gap-1.5 text-violet-600 dark:text-violet-400">
-                            <KeyRound className="h-3.5 w-3.5" />
-                            Gemini API Key
-                        </span>
-                    </div>
-                    <p className="text-muted-foreground text-[11px] leading-normal">
-                        Paste your personal Gemini API Key below. Your key is stored strictly on your local browser/device.
-                    </p>
-                    <div className="flex gap-2">
-                        <Input
-                            type="password"
-                            placeholder={apiKey ? "••••••••••••••••" : "AIzaSy..."}
-                            value={apiKey}
-                            onChange={(e) => setApiKey(e.target.value)}
-                            className="h-8 text-[11px] rounded-md bg-background border-border/80 focus-visible:ring-violet-500"
-                        />
-                        <Button
-                            size="sm"
-                            className="h-8 px-3.5 text-[11px] rounded-md bg-violet-600 hover:bg-violet-700 text-white font-medium"
-                            onClick={() => {
-                                if (typeof window !== "undefined") {
-                                    if (apiKey.trim()) {
-                                        localStorage.setItem("arquade_gemini_api_key", apiKey.trim());
-                                    } else {
-                                        localStorage.removeItem("arquade_gemini_api_key");
+            <div 
+                className={cn(
+                    "grid transition-all duration-300 ease-in-out border-border bg-violet-500/5",
+                    showKeyConfig ? "grid-rows-[1fr] border-b opacity-100" : "grid-rows-[0fr] border-b-0 opacity-0"
+                )}
+            >
+                <div className="overflow-hidden">
+                    <div className="p-3.5 text-xs space-y-2.5">
+                        <div className="flex items-center justify-between font-semibold text-foreground">
+                            <span className="flex items-center gap-1.5 text-violet-600 dark:text-violet-400">
+                                <KeyRound className="h-3.5 w-3.5" />
+                                Gemini API Key
+                            </span>
+                        </div>
+                        <p className="text-muted-foreground text-[11px] leading-normal">
+                            Paste your personal Gemini API Key below. Your key is stored strictly on your local browser/device.
+                        </p>
+                        <div className="flex gap-2">
+                            <Input
+                                type="password"
+                                placeholder={apiKey ? "••••••••••••••••" : "AIzaSy..."}
+                                value={apiKey}
+                                onChange={(e) => setApiKey(e.target.value)}
+                                className="h-8 text-[11px] rounded-md bg-background border-border/80 focus-visible:ring-violet-500"
+                            />
+                            <Button
+                                size="sm"
+                                className="h-8 px-3.5 text-[11px] rounded-md bg-violet-600 hover:bg-violet-700 text-white font-medium"
+                                onClick={() => {
+                                    if (typeof window !== "undefined") {
+                                        if (apiKey.trim()) {
+                                            localStorage.setItem("arquade_gemini_api_key", apiKey.trim());
+                                        } else {
+                                            localStorage.removeItem("arquade_gemini_api_key");
+                                        }
                                     }
-                                }
-                                setShowKeyConfig(false);
-                            }}
-                        >
-                            Save
-                        </Button>
-                    </div>
-                    <div className="flex justify-between items-center text-[10px] pt-0.5">
-                        <a
-                            href="https://aistudio.google.com/"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-violet-600 dark:text-violet-400 hover:underline font-medium flex items-center gap-0.5"
-                        >
-                            Get a free API key from Google AI Studio →
-                        </a>
+                                    setShowKeyConfig(false);
+                                }}
+                            >
+                                Save
+                            </Button>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px] pt-0.5">
+                            <a
+                                href="https://aistudio.google.com/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-violet-600 dark:text-violet-400 hover:underline font-medium flex items-center gap-0.5"
+                            >
+                                Get a free API key from Google AI Studio →
+                            </a>
+                        </div>
                     </div>
                 </div>
-            )}
+            </div>
 
             {/* Chat History View */}
             <ScrollArea ref={scrollRef} className="flex-1 min-h-0 p-4">
@@ -338,10 +355,10 @@ export function AIChatPanel({ page, pageContent, onClose }: AIChatPanelProps) {
                                     {/* Message Bubble */}
                                     <div
                                         className={cn(
-                                            "rounded-xl px-3.5 py-2 max-w-[85%] shadow-2xs leading-relaxed",
+                                            "relative rounded-xl py-2 pl-3.5 shadow-2xs leading-relaxed group/bubble max-w-[85%]",
                                             isBot
-                                                ? "bg-muted/40 text-foreground border border-border/30"
-                                                : "bg-primary text-primary-foreground font-normal"
+                                                ? "bg-muted/40 text-foreground border border-border/30 pr-8"
+                                                : "bg-primary text-primary-foreground font-normal pr-3.5"
                                         )}
                                     >
                                         {isBot ? (
@@ -351,9 +368,22 @@ export function AIChatPanel({ page, pageContent, onClose }: AIChatPanelProps) {
                                                     <span className="text-xs text-muted-foreground font-medium animate-pulse">Thinking...</span>
                                                 </div>
                                             ) : (
-                                                <div className="space-y-1">
-                                                    {formatMarkdown(msg.content)}
-                                                </div>
+                                                <>
+                                                    <div className="space-y-1">
+                                                        {formatMarkdown(msg.content)}
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleCopy(msg.content, index)}
+                                                        className="absolute right-2 top-2 opacity-0 group-hover/bubble:opacity-100 focus:opacity-100 transition-opacity p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground bg-background/50 backdrop-blur-xs border border-border/40 cursor-pointer animate-in fade-in duration-150"
+                                                        title="Copy response"
+                                                    >
+                                                        {copiedIndex === index ? (
+                                                            <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                                                        ) : (
+                                                            <Copy className="h-3 w-3" />
+                                                        )}
+                                                    </button>
+                                                </>
                                             )
                                         ) : (
                                             <p className="text-[13px]">{msg.content}</p>

@@ -8,7 +8,6 @@ import { signOut } from "@/lib/actions/auth";
 import { PageTree } from "./page-tree";
 import { TrashBox } from "./trash-box";
 import { SearchDialog } from "./search-dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import {
@@ -157,9 +156,9 @@ export function Sidebar() {
                         <Plus className="h-3.5 w-3.5" />
                     </Button>
                 </div>
-                <ScrollArea className="flex-1" style={{ height: "calc(100% - 28px)" }}>
+                <div className="flex-1 overflow-y-auto no-scrollbar" style={{ height: "calc(100% - 28px)" }}>
                     <PageTree />
-                </ScrollArea>
+                </div>
             </div>
 
             {/* Bottom actions */}
