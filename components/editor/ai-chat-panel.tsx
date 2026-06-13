@@ -125,7 +125,7 @@ export function AIChatPanel({ page, pageContent, onClose }: AIChatPanelProps) {
         try {
             const response = await fetch("/api/chat", {
                 method: "POST",
-                headers: { 
+                headers: {
                     "Content-Type": "application/json",
                     ...(apiKey ? { "x-gemini-api-key": apiKey } : {})
                 },
@@ -164,7 +164,7 @@ export function AIChatPanel({ page, pageContent, onClose }: AIChatPanelProps) {
             }
         } catch (err: any) {
             console.error("AI assistant error:", err);
-            
+
             const isMissingKey = err.code === "MISSING_API_KEY" || err.message?.includes("Gemini API key is not configured");
             if (isMissingKey) {
                 setShowKeyConfig(true);
@@ -174,11 +174,10 @@ export function AIChatPanel({ page, pageContent, onClose }: AIChatPanelProps) {
                 const next = [...prev];
                 next[next.length - 1] = {
                     role: "model",
-                    content: `⚠️ **API Key Required:** ${err.message || "Gemini API key is not configured."} ${
-                        isMissingKey 
-                            ? "Please enter your Gemini API Key in the settings panel above." 
+                    content: `⚠️ **API Key Required:** ${err.message || "Gemini API key is not configured."} ${isMissingKey
+                            ? "Please enter your Gemini API Key in the settings panel above."
                             : "Please check your network and key, then try again."
-                    }`,
+                        }`,
                 };
                 return next;
             });
@@ -196,7 +195,7 @@ export function AIChatPanel({ page, pageContent, onClose }: AIChatPanelProps) {
                         <Sparkles className="h-4 w-4 text-violet-600 dark:text-violet-400 animate-pulse" />
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-sm font-semibold text-foreground leading-none">Page AI</span>
+                        <span className="text-sm font-semibold text-foreground leading-none">Arquade AI</span>
                         <span className="text-[10px] text-muted-foreground mt-0.5">Grounded in page context</span>
                     </div>
                 </div>
@@ -207,8 +206,8 @@ export function AIChatPanel({ page, pageContent, onClose }: AIChatPanelProps) {
                         size="icon"
                         className={cn(
                             "h-7 w-7 rounded-md transition-colors",
-                            showKeyConfig 
-                                ? "text-violet-600 bg-violet-500/10 hover:bg-violet-500/20" 
+                            showKeyConfig
+                                ? "text-violet-600 bg-violet-500/10 hover:bg-violet-500/20"
                                 : "text-muted-foreground hover:bg-accent"
                         )}
                         onClick={() => setShowKeyConfig(!showKeyConfig)}

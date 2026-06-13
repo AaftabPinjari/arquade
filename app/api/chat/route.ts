@@ -6,8 +6,8 @@ export async function POST(req: Request) {
     const apiKey = userApiKey || process.env.GEMINI_API_KEY;
     if (!apiKey) {
         return NextResponse.json(
-            { 
-                error: "Gemini API key is not configured. Please paste your Gemini API Key using the settings key icon (🔑) in the Page AI panel.",
+            {
+                error: "Gemini API key is not configured. Please paste your Gemini API Key using the settings key icon (🔑) in the Arquade AI panel.",
                 code: "MISSING_API_KEY"
             },
             { status: 400 }
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
         }
 
         const genAI = new GoogleGenerativeAI(apiKey);
-        
+
         // Ground the AI on the current document
         const systemInstruction = `You are an AI assistant integrated into a Notion-like workspace application called "Arquade".
 Your task is to help the user with their document.
