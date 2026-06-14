@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { Page } from "@/types";
+import { useUIStore } from "@/stores/ui-store";
 
 interface AIChatPanelProps {
     page: Page;
@@ -46,6 +47,17 @@ function formatMarkdown(text: string) {
             /`(.*?)`/g,
             '<code class="bg-muted px-1.5 py-0.5 rounded font-mono text-[11px] text-foreground font-semibold border border-border/40">$1</code>'
         );
+
+        // Blockquote formatting: > text
+        if (formatted.startsWith("> ")) {
+            return (
+                <div
+                    key={i}
+                    className="border-l-2 border-violet-500 bg-violet-500/5 dark:bg-violet-500/10 pl-3 py-1.5 my-1.5 rounded-r-md text-[12px] text-foreground/85 font-medium italic select-text leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: formatted.substring(2) }}
+                />
+            );
+        }
 
         // Bullet list formatting
         if (formatted.startsWith("* ") || formatted.startsWith("- ")) {
@@ -85,6 +97,7 @@ function formatMarkdown(text: string) {
 }
 
 export function AIChatPanel({ page, pageContent, onClose }: AIChatPanelProps) {
+    const { aiSelectedText, setAiSelectedText } = useUIStore();
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -92,6 +105,26 @@ export function AIChatPanel({ page, pageContent, onClose }: AIChatPanelProps) {
     const [showKeyConfig, setShowKeyConfig] = useState(false);
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
+
+    const getFormattedQuote = (text: string) => {
+        return text.split("\n").map((line) => `> ${line}`).join("\n");
+    };
+
+    const handleQuickAction = (action: "explain" | "summarize" | "improve") => {
+        if (!aiSelectedText || isLoading) return;
+
+        let prompt = "";
+        if (action === "explain") {
+            prompt = `Explain this highlighted selection:\n${getFormattedQuote(aiSelectedText)}`;
+        } else if (action === "summarize") {
+            prompt = `Summarize this highlighted selection in brief:\n${getFormattedQuote(aiSelectedText)}`;
+        } else if (action === "improve") {
+            prompt = `Improve the grammar, clarity, and writing of this highlighted selection:\n${getFormattedQuote(aiSelectedText)}`;
+        }
+
+        setAiSelectedText(null);
+        handleSend(prompt);
+    };
 
     const handleCopy = (content: string, index: number) => {
         if (!content) return;
@@ -402,12 +435,74 @@ export function AIChatPanel({ page, pageContent, onClose }: AIChatPanelProps) {
                 )}
             </ScrollArea>
 
+            {/* Selection Context Banner */}
+            {aiSelectedText && (
+                <div className="px-4 py-3.5 border-t border-border/80 bg-background/85 backdrop-blur-md flex flex-col gap-2.5 shrink-0 animate-in slide-in-from-bottom-3 duration-300">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold tracking-wider uppercase text-violet-600 dark:text-violet-400 flex items-center gap-1.5 select-none">
+                            <Sparkles className="h-3.5 w-3.5 text-violet-500 fill-violet-500/10 animate-pulse" />
+                            Selection Context
+                        </span>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5 hover:bg-muted rounded-full text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                            onClick={() => setAiSelectedText(null)}
+                            title="Clear selection"
+                        >
+                            <X className="h-3.5 w-3.5" />
+                        </Button>
+                    </div>
+                    <div className="text-[11px] text-foreground/80 italic bg-muted/40 border border-border/60 px-3 py-2 rounded-lg max-h-16 overflow-y-auto font-sans leading-relaxed select-text no-scrollbar">
+                        "{aiSelectedText}"
+                    </div>
+                    
+                    {/* Quick Actions */}
+                    <div className="flex flex-wrap gap-2 pt-0.5">
+                        <button
+                            type="button"
+                            onClick={() => handleQuickAction("explain")}
+                            disabled={isLoading}
+                            className="flex items-center gap-1.5 text-[10px] bg-background hover:bg-violet-500/[0.04] dark:hover:bg-violet-500/[0.08] border border-border hover:border-violet-500/30 text-foreground hover:text-violet-600 dark:hover:text-violet-400 px-2.5 py-1.5 rounded-lg font-medium transition-all duration-200 cursor-pointer select-none disabled:opacity-50 shadow-xs active:scale-95"
+                        >
+                            <Brain className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                            Explain
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleQuickAction("summarize")}
+                            disabled={isLoading}
+                            className="flex items-center gap-1.5 text-[10px] bg-background hover:bg-violet-500/[0.04] dark:hover:bg-violet-500/[0.08] border border-border hover:border-violet-500/30 text-foreground hover:text-violet-600 dark:hover:text-violet-400 px-2.5 py-1.5 rounded-lg font-medium transition-all duration-200 cursor-pointer select-none disabled:opacity-50 shadow-xs active:scale-95"
+                        >
+                            <FileText className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                            Summarize
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleQuickAction("improve")}
+                            disabled={isLoading}
+                            className="flex items-center gap-1.5 text-[10px] bg-background hover:bg-violet-500/[0.04] dark:hover:bg-violet-500/[0.08] border border-border hover:border-violet-500/30 text-foreground hover:text-violet-600 dark:hover:text-violet-400 px-2.5 py-1.5 rounded-lg font-medium transition-all duration-200 cursor-pointer select-none disabled:opacity-50 shadow-xs active:scale-95"
+                        >
+                            <Sparkles className="h-3.5 w-3.5 text-amber-500 shrink-0 animate-pulse" />
+                            Improve Writing
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Input Bar */}
             <div className="p-3 border-t border-border bg-muted/10 shrink-0">
                 <form
                     onSubmit={(e) => {
                         e.preventDefault();
-                        handleSend(input);
+                        if (!input.trim() || isLoading) return;
+                        
+                        let finalQuery = input;
+                        if (aiSelectedText) {
+                            finalQuery = `${input}\n\n${getFormattedQuote(aiSelectedText)}`;
+                            setAiSelectedText(null);
+                        }
+                        handleSend(finalQuery);
                     }}
                     className="flex items-center gap-2"
                 >

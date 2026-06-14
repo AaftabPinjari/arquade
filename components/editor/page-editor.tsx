@@ -4,19 +4,58 @@ import { useCallback, useEffect, useRef, useMemo } from "react";
 import { 
   useCreateBlockNote, 
   SuggestionMenuController, 
-  getDefaultReactSlashMenuItems 
+  getDefaultReactSlashMenuItems,
+  FormattingToolbarController,
+  FormattingToolbar,
+  BlockTypeSelect,
+  BasicTextStyleButton,
+  TextAlignButton,
+  ColorStyleButton,
+  NestBlockButton,
+  UnnestBlockButton,
+  CreateLinkButton,
+  useComponentsContext
 } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
 import { usePageStore } from "@/stores/page-store";
+import { useUIStore } from "@/stores/ui-store";
 import { createClient } from "@/lib/supabase/client";
 import type { Page } from "@/types";
 import { useTheme } from "next-themes";
 import { schema, getCustomSlashMenuItems } from "./schema";
 import { uuidv4 } from "@/lib/utils";
+import { Sparkles } from "lucide-react";
 
 interface PageEditorProps {
     page: Page;
+}
+
+function AskAIButton({ editor }: { editor: any }) {
+    const Components = useComponentsContext();
+    const { setAiOpen, setAiSelectedText } = useUIStore();
+
+    if (!Components) return null;
+
+    const handleAskAI = () => {
+        const selectedText = editor.getSelectedText();
+        if (selectedText) {
+            setAiSelectedText(selectedText);
+            setAiOpen(true);
+        }
+    };
+
+    return (
+        <Components.Generic.Toolbar.Button
+            onClick={handleAskAI}
+            mainTooltip="Ask AI"
+        >
+            <div className="flex items-center gap-1.5 text-violet-600 dark:text-violet-400 font-semibold px-1 py-0.5 select-none transition-colors duration-150 rounded hover:text-violet-700 dark:hover:text-violet-300">
+                <Sparkles className="h-3.5 w-3.5 text-violet-500 fill-violet-500/15 animate-pulse shrink-0" />
+                <span className="text-xs font-semibold tracking-wide">Ask AI</span>
+            </div>
+        </Components.Generic.Toolbar.Button>
+    );
 }
 
 function deepEqual(a: any, b: any): boolean {
@@ -171,6 +210,7 @@ export function PageEditor({ page }: PageEditorProps) {
             theme={resolvedTheme === "dark" ? "dark" : "light"}
             className="min-h-[50vh]"
             slashMenu={false}
+            formattingToolbar={false}
         >
             <SuggestionMenuController
                 triggerCharacter={"/"}
@@ -185,6 +225,30 @@ export function PageEditor({ page }: PageEditorProps) {
                         )
                     )
                 }
+            />
+            <FormattingToolbarController
+                formattingToolbar={() => (
+                    <FormattingToolbar>
+                        <BlockTypeSelect key="blockTypeSelect" />
+                        
+                        <AskAIButton editor={editor} key="askAIButton" />
+                        
+                        <BasicTextStyleButton basicTextStyle="bold" key="boldStyleButton" />
+                        <BasicTextStyleButton basicTextStyle="italic" key="italicStyleButton" />
+                        <BasicTextStyleButton basicTextStyle="underline" key="underlineStyleButton" />
+                        <BasicTextStyleButton basicTextStyle="strike" key="strikeStyleButton" />
+                        
+                        <ColorStyleButton key="colorStyleButton" />
+                        <NestBlockButton key="nestBlockButton" />
+                        <UnnestBlockButton key="unnestBlockButton" />
+                        
+                        <TextAlignButton textAlignment="left" key="textAlignLeftButton" />
+                        <TextAlignButton textAlignment="center" key="textAlignCenterButton" />
+                        <TextAlignButton textAlignment="right" key="textAlignRightButton" />
+                        
+                        <CreateLinkButton key="createLinkButton" />
+                    </FormattingToolbar>
+                )}
             />
         </BlockNoteView>
     );

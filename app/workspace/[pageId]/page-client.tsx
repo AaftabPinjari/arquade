@@ -10,6 +10,7 @@ import dynamic from "next/dynamic";
 import { Sparkles } from "lucide-react";
 import { AIChatPanel } from "@/components/editor/ai-chat-panel";
 import { useUserStore } from "@/stores/user-store";
+import { useUIStore } from "@/stores/ui-store";
 import { extractTextFromBlocks, blocksToMarkdown, cn } from "@/lib/utils";
 
 // Code-split the heavy editor bundle (~300KB+), but preload it eagerly
@@ -38,7 +39,7 @@ export default function PageViewClient({ pageId, initialData }: PageViewClientPr
     const isLoaded = usePageStore((s) => s.isLoaded);
     const fetchPageContent = usePageStore((s) => s.fetchPageContent);
     const loadedContentIds = usePageStore((s) => s.loadedContentIds);
-    const [aiOpen, setAiOpen] = useState(false);
+    const { aiOpen, setAiOpen } = useUIStore();
     const [aiWidth, setAiWidth] = useState(400);
     const [isDragging, setIsDragging] = useState(false);
 
