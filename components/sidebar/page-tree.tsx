@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function PageTree() {
     const router = useRouter();
     const { pages, movePage, addPage, isLoaded } = usePageStore();
-    const { activePageId } = useUIStore();
+    const { activePageId, sidebarWidth } = useUIStore();
     const treeRef = useRef<ReturnType<typeof Tree<TreePage>> | null>(null);
 
     // Build the tree data from flat pages array
@@ -83,7 +83,7 @@ export function PageTree() {
             onActivate={handleActivate}
             selection={activePageId ?? undefined}
             openByDefault={false}
-            width={240}
+            width={sidebarWidth}
             indent={16}
             rowHeight={30}
             overscanCount={10}

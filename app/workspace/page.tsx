@@ -1,14 +1,30 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { usePageStore } from "@/stores/page-store";
+import { useUserStore } from "@/stores/user-store";
 import { FileText, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function WorkspacePage() {
     const router = useRouter();
-    const { addPage, pages } = usePageStore();
+    const { addPage, pages, isLoaded } = usePageStore();
+    const { profile } = useUserStore();
     const activePages = pages.filter((p) => !p.is_archived);
+
+    // Redirect to last active page if one exists
+    useEffect(() => {
+        if (!isLoaded || !profile?.id || typeof window === "undefined") return;
+
+        const lastActiveId = localStorage.getItem(`arquade_last_active_page_id_${profile.id}`);
+        if (lastActiveId) {
+            const pageExists = pages.some((p) => p.id === lastActiveId && !p.is_archived);
+            if (pageExists) {
+                router.replace(`/workspace/${lastActiveId}`);
+            }
+        }
+    }, [isLoaded, pages, profile?.id, router]);
 
     async function handleCreatePage() {
         const page = await addPage(null);

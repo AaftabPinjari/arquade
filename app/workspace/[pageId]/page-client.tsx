@@ -9,7 +9,8 @@ import type { Page } from "@/types";
 import dynamic from "next/dynamic";
 import { Sparkles } from "lucide-react";
 import { AIChatPanel } from "@/components/editor/ai-chat-panel";
-import { extractTextFromBlocks, cn } from "@/lib/utils";
+import { useUserStore } from "@/stores/user-store";
+import { extractTextFromBlocks, blocksToMarkdown, cn } from "@/lib/utils";
 
 // Code-split the heavy editor bundle (~300KB+), but preload it eagerly
 // so it's ready by the time the user navigates to any page.
@@ -32,13 +33,21 @@ interface PageViewClientProps {
 
 export default function PageViewClient({ pageId, initialData }: PageViewClientProps) {
     const router = useRouter();
+    const { profile } = useUserStore();
     const pages = usePageStore((s) => s.pages);
     const isLoaded = usePageStore((s) => s.isLoaded);
     const fetchPageContent = usePageStore((s) => s.fetchPageContent);
     const loadedContentIds = usePageStore((s) => s.loadedContentIds);
     const [aiOpen, setAiOpen] = useState(false);
-    const [aiWidth, setAiWidth] = useState(320);
+    const [aiWidth, setAiWidth] = useState(400);
     const [isDragging, setIsDragging] = useState(false);
+
+    // Save active page to localStorage
+    useEffect(() => {
+        if (pageId && profile?.id && typeof window !== "undefined") {
+            localStorage.setItem(`arquade_last_active_page_id_${profile.id}`, pageId);
+        }
+    }, [pageId, profile?.id]);
 
     // Resize handlers for the AI panel on desktop
     const startResizing = (mouseDownEvent: React.MouseEvent) => {
@@ -90,9 +99,9 @@ export default function PageViewClient({ pageId, initialData }: PageViewClientPr
         return pages.find((p) => p.id === pageId) || initialData || null;
     }, [pages, pageId, initialData]);
 
-    // Extract raw text for Gemini API prompt
-    const plainText = useMemo(() => {
-        return page ? extractTextFromBlocks(page.content) : "";
+    // Extract formatted markdown for Gemini API prompt
+    const markdownContent = useMemo(() => {
+        return page ? blocksToMarkdown(page.content) : "";
     }, [page, page?.content]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Content is "loaded" if:
@@ -180,7 +189,7 @@ export default function PageViewClient({ pageId, initialData }: PageViewClientPr
                             isDragging ? "bg-violet-500/60 w-1.5" : "bg-transparent"
                         )}
                     />
-                    <AIChatPanel page={page} pageContent={plainText} onClose={() => setAiOpen(false)} />
+                    <AIChatPanel page={page} pageContent={markdownContent} onClose={() => setAiOpen(false)} />
                 </div>
             )}
 
@@ -195,7 +204,7 @@ export default function PageViewClient({ pageId, initialData }: PageViewClientPr
                         {/* Drag Bar decoration */}
                         <div className="w-10 h-1 bg-muted-foreground/25 rounded-full mx-auto my-3 shrink-0" />
                         <div className="flex-1 min-h-0">
-                            <AIChatPanel page={page} pageContent={plainText} onClose={() => setAiOpen(false)} />
+                            <AIChatPanel page={page} pageContent={markdownContent} onClose={() => setAiOpen(false)} />
                         </div>
                     </div>
                 </div>

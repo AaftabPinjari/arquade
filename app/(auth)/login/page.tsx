@@ -21,10 +21,13 @@ export default function LoginPage() {
                 : await signIn(formData);
             if (result?.error) {
                 setError(result.error);
+                setLoading(false);
             }
-        } catch {
-            // redirect throws, which is expected
-        } finally {
+        } catch (err: any) {
+            if (err?.message === "NEXT_REDIRECT" || err?.digest?.startsWith("NEXT_REDIRECT")) {
+                throw err;
+            }
+            setError("An unexpected error occurred");
             setLoading(false);
         }
     }
@@ -38,8 +41,8 @@ export default function LoginPage() {
 
             {/* Top Navigation */}
             <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
-                <Link href="/">
-                    <Button variant="ghost" size="sm" className="gap-2 rounded-full font-medium">
+                <Link href="/" className={loading ? "pointer-events-none" : ""}>
+                    <Button variant="ghost" size="sm" className="gap-2 rounded-full font-medium" disabled={loading}>
                         <ChevronLeft className="h-4 w-4" />
                         Back to Home
                     </Button>
@@ -82,6 +85,7 @@ export default function LoginPage() {
                                     type="text"
                                     placeholder="John Doe"
                                     required={isSignUp}
+                                    disabled={loading}
                                     className="h-12 rounded-xl bg-background/50 focus-visible:bg-background"
                                 />
                             </div>
@@ -99,6 +103,7 @@ export default function LoginPage() {
                                 type="email"
                                 placeholder="you@example.com"
                                 required
+                                disabled={loading}
                                 className="h-12 rounded-xl bg-background/50 focus-visible:bg-background"
                             />
                         </div>
@@ -116,6 +121,7 @@ export default function LoginPage() {
                                 placeholder="••••••••"
                                 required
                                 minLength={6}
+                                disabled={loading}
                                 className="h-12 rounded-xl bg-background/50 focus-visible:bg-background"
                             />
                         </div>
@@ -126,9 +132,11 @@ export default function LoginPage() {
                             </div>
                         )}
 
-                        <Button type="submit" className="w-full h-12 rounded-full shadow-lg shadow-primary/20 mt-2 font-semibold text-base transition-all hover:scale-[1.02]" disabled={loading}>
+                        <Button type="submit" className="w-full h-12 rounded-full shadow-lg shadow-primary/20 mt-2 font-semibold text-base transition-all hover:scale-[1.02] active:scale-[0.98] disabled:scale-100 disabled:opacity-70 disabled:pointer-events-none" disabled={loading}>
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {isSignUp ? "Create account" : "Sign in"}
+                            {loading 
+                                ? (isSignUp ? "Creating account..." : "Signing in...") 
+                                : (isSignUp ? "Create account" : "Sign in")}
                         </Button>
                     </form>
 
@@ -140,7 +148,8 @@ export default function LoginPage() {
                                 setIsSignUp(!isSignUp);
                                 setError(null);
                             }}
-                            className="font-bold text-primary underline-offset-4 hover:underline transition-all"
+                            disabled={loading}
+                            className="font-bold text-primary underline-offset-4 hover:underline transition-all disabled:opacity-50 disabled:no-underline"
                         >
                             {isSignUp ? "Sign in" : "Sign up"}
                         </button>

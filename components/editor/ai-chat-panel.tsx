@@ -197,7 +197,7 @@ export function AIChatPanel({ page, pageContent, onClose }: AIChatPanelProps) {
     };
 
     return (
-        <div className="h-full flex flex-col overflow-hidden bg-background border-l border-border md:shadow-2xs">
+        <div className="h-full flex flex-col overflow-hidden bg-background border-l border-border md:shadow-2xs font-sans">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border select-none shrink-0 bg-muted/20">
                 <div className="flex items-center gap-2">

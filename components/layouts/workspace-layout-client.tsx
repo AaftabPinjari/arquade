@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useUIStore } from "@/stores/ui-store";
 import { cn } from "@/lib/utils";
@@ -15,7 +15,63 @@ export function WorkspaceLayoutClient({
     children: React.ReactNode;
 }) {
     const pathname = usePathname();
-    const { sidebarOpen, toggleSidebar, setActivePageId } = useUIStore();
+    const { sidebarOpen, sidebarWidth, setSidebarWidth, toggleSidebar, setActivePageId } = useUIStore();
+
+    const [isDragging, setIsDragging] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Track if screen is mobile size to prevent resizing and handle defaults
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener("resize", checkMobile);
+        return () => window.removeEventListener("resize", checkMobile);
+    }, []);
+
+    // Resize handlers for the sidebar
+    const startResizing = (mouseDownEvent: React.MouseEvent) => {
+        mouseDownEvent.preventDefault();
+        setIsDragging(true);
+    };
+
+    useEffect(() => {
+        if (!isDragging) return;
+
+        const handleMouseMove = (e: MouseEvent) => {
+            const newWidth = e.clientX;
+            const minWidth = 200;
+            const maxWidth = Math.min(480, window.innerWidth * 0.4); // max 40% of screen width
+            if (newWidth >= minWidth && newWidth <= maxWidth) {
+                setSidebarWidth(newWidth);
+            }
+        };
+
+        const handleMouseUp = () => {
+            setIsDragging(false);
+        };
+
+        window.addEventListener("mousemove", handleMouseMove);
+        window.addEventListener("mouseup", handleMouseUp);
+
+        return () => {
+            window.removeEventListener("mousemove", handleMouseMove);
+            window.removeEventListener("mouseup", handleMouseUp);
+        };
+    }, [isDragging]);
+
+    useEffect(() => {
+        if (isDragging) {
+            document.body.style.cursor = "col-resize";
+            document.body.style.userSelect = "none";
+        } else {
+            document.body.style.cursor = "";
+            document.body.style.userSelect = "";
+        }
+        return () => {
+            document.body.style.cursor = "";
+            document.body.style.userSelect = "";
+        };
+    }, [isDragging]);
 
     // Track active page from URL
     useEffect(() => {
@@ -41,12 +97,27 @@ export function WorkspaceLayoutClient({
             {/* Sidebar (Desktop flex / Mobile absolute) */}
             <aside
                 className={cn(
-                    "fixed md:relative inset-y-0 left-0 h-full flex-shrink-0 border-r border-border bg-sidebar transition-all duration-300 ease-in-out z-50 overflow-hidden",
-                    sidebarOpen ? "w-60 translate-x-0" : "w-0 -translate-x-full md:translate-x-0 overflow-hidden"
+                    "fixed md:relative inset-y-0 left-0 h-full flex-shrink-0 border-r border-border bg-sidebar z-50 overflow-hidden",
+                    !isDragging && "transition-all duration-300 ease-in-out",
+                    sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0 overflow-hidden"
                 )}
+                style={{
+                    width: sidebarOpen ? (isMobile ? "240px" : `${sidebarWidth}px`) : "0px"
+                }}
             >
-                <div className="w-60 h-full">
+                <div className="w-full h-full relative">
                     <Sidebar />
+                    
+                    {/* Resizable Drag Handle */}
+                    {sidebarOpen && !isMobile && (
+                        <div
+                            onMouseDown={startResizing}
+                            className={cn(
+                                "absolute right-0 top-0 bottom-0 w-1 cursor-col-resize z-50 transition-all duration-150 hover:bg-violet-500/40",
+                                isDragging ? "bg-violet-500/60 w-1.5" : "bg-transparent"
+                            )}
+                        />
+                    )}
                 </div>
             </aside>
 
